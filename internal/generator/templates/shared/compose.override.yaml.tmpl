@@ -1,0 +1,20 @@
+# Local dev overrides — automatically merged by Docker Compose.
+# In prod this file does not exist. Caddy is the only entry point.
+# Commit this file — it's a dev tool, not a secret.
+
+services:
+
+  {{.ProjectName}}-api:
+    ports:
+      - "8080:8080"
+    environment:
+      ENVIRONMENT: development
+      ASPNETCORE_ENVIRONMENT: Development
+
+  {{.ProjectName}}-app:
+    ports:
+      - "3000:3000"
+
+  {{.ProjectName}}-db:
+    ports:
+      - "5432:5432"

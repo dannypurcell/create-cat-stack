@@ -1,2 +1,9 @@
 -- {{.ProjectName}} schema
 -- Managed by pgschema. Edit this file, pgschema applies the diff.
+
+CREATE TABLE IF NOT EXISTS app.greetings (
+    id          SERIAL PRIMARY KEY,
+    message     TEXT        NOT NULL,
+    language    VARCHAR(10) NOT NULL DEFAULT 'en',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

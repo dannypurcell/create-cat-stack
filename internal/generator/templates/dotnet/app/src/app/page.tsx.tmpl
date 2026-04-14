@@ -1,24 +1,163 @@
-export default function Home() {
-  return (
-    <main style={{"{{"}} padding: "2rem" {{"}}"}}>
-      <h1>{{.ProjectName}}</h1>
-      <p>Your application is running.</p>
-      <section>
-        <h2>API Status</h2>
-        <HealthCheck />
-      </section>
-    </main>
-  );
+'use client';
+
+import { useState } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  Divider,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LogoutIcon from '@mui/icons-material/Logout';
+
+interface Greeting {
+  id: number;
+  message: string;
+  language: string;
 }
 
-async function HealthCheck() {
-  try {
-    const res = await fetch("http://localhost:8080/health", {
-      cache: "no-store",
-    });
-    const data = await res.json();
-    return <p>API: {data.status}</p>;
-  } catch {
-    return <p>API: unreachable</p>;
+export default function Home() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [greeting, setGreeting] = useState<Greeting | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchGreeting = async () => {
+    const res = await fetch('/api/greetings/random');
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json() as Promise<Greeting>;
+  };
+
+  const handleLogin = async () => {
+    if (!email || !password) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchGreeting();
+      setGreeting(data);
+      setLoggedIn(true);
+    } catch {
+      setError('Could not reach the API. Is the stack running?');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewGreeting = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchGreeting();
+      setGreeting(data);
+    } catch {
+      setError('Failed to fetch greeting');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    setLoggedIn(false);
+    setGreeting(null);
+    setPassword('');
+  };
+
+  if (loggedIn && greeting) {
+    return (
+      <Container maxWidth="sm" sx={{"{{"}} mt: 12 {{"}}"}}>
+        <Card elevation={4}>
+          <CardContent sx={{"{{"}} p: 5, textAlign: 'center' {{"}}"}}>
+            <Typography variant="overline" color="text.secondary">
+              Welcome back
+            </Typography>
+            <Typography variant="h6" gutterBottom>
+              {email}
+            </Typography>
+
+            <Divider sx={{"{{"}} my: 3 {{"}}"}} />
+
+            <AutoAwesomeIcon color="primary" sx={{"{{"}} fontSize: 36, mb: 2 {{"}}"}} />
+            <Typography variant="h3" sx={{"{{"}} fontWeight: 300, mb: 1 {{"}}"}}>
+              {greeting.message}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {greeting.language.toUpperCase()} · #{greeting.id}
+            </Typography>
+
+            <Box sx={{"{{"}} mt: 4, display: 'flex', gap: 2, justifyContent: 'center' {{"}}"}}>
+              <Button
+                variant="contained"
+                onClick={handleNewGreeting}
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
+              >
+                New greeting
+              </Button>
+              <Button variant="outlined" startIcon={<LogoutIcon />} onClick={handleSignOut}>
+                Sign out
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    );
   }
+
+  return (
+    <Container maxWidth="xs" sx={{"{{"}} mt: 12 {{"}}"}}>
+      <Card elevation={4}>
+        <CardContent sx={{"{{"}} p: 4 {{"}}"}}>
+          <Typography variant="h5" fontWeight={600} textAlign="center" gutterBottom>
+            {{.ProjectName}}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{"{{"}} mb: 3 {{"}}"}}>
+            Sign in to continue
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            autoComplete="current-password"
+          />
+
+          {error && (
+            <Typography color="error" variant="body2" sx={{"{{"}} mt: 1 {{"}}"}}>
+              {error}
+            </Typography>
+          )}
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            sx={{"{{"}} mt: 3 {{"}}"}}
+            onClick={handleLogin}
+            disabled={loading || !email || !password}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
+          </Button>
+        </CardContent>
+      </Card>
+    </Container>
+  );
 }

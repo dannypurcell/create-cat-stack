@@ -1,0 +1,19 @@
+using {{.DotnetNamespace}}.API.Services;
+
+namespace {{.DotnetNamespace}}.API.Routers;
+
+public static class GreetingRouter
+{
+    public static void MapGreetingRoutes(this WebApplication app)
+    {
+        var group = app.MapGroup("/greetings");
+
+        group.MapGet("/random", async (GreetingService service) =>
+        {
+            var greeting = await service.GetRandomAsync();
+            return greeting is not null
+                ? Results.Ok(greeting)
+                : Results.NotFound(new { error = "No greetings found" });
+        });
+    }
+}

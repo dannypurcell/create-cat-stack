@@ -9,6 +9,15 @@ secrets:
 {{- if eq .Auth "pocket-id"}}
   {{.ProjectName}}_pocket_id_key:
     file: ${SECRETS_DIR:-./secrets}/pocket_id_key
+{{- else if eq .Auth "jumpcloud"}}
+  {{.ProjectName}}_oidc_client_secret:
+    file: ${SECRETS_DIR:-./secrets}/oidc_client_secret
+{{- end}}
+{{- if .DataProcessing}}
+  {{.ProjectName}}_mssql_password:
+    file: ${SECRETS_DIR:-./secrets}/mssql_password
+  {{.ProjectName}}_sf_client_secret:
+    file: ${SECRETS_DIR:-./secrets}/sf_client_secret
 {{- end}}
 
 services:
@@ -53,10 +62,20 @@ services:
 {{- else if eq .Auth "jumpcloud"}}
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-https://oauth.id.jumpcloud.com/}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-change-me}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-change-me}
 {{- else if ne .Auth "none"}}
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+{{- end}}
+    secrets:
+      - {{.ProjectName}}_db_password
+{{- if eq .Auth "jumpcloud"}}
+      - {{.ProjectName}}_oidc_client_secret
+{{- else if eq .Auth "pocket-id"}}
+      - {{.ProjectName}}_pocket_id_key
+{{- end}}
+{{- if .DataProcessing}}
+      - {{.ProjectName}}_mssql_password
+      - {{.ProjectName}}_sf_client_secret
 {{- end}}
     networks:
       - {{.ProjectName}}-network

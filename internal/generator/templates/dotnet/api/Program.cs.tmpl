@@ -14,6 +14,7 @@ builder.Services.AddSingleton<DatabaseClient>();
 
 // Services
 builder.Services.AddScoped<ExampleService>();
+builder.Services.AddScoped<GreetingService>();
 
 // CORS for local dev (app container -> api container)
 builder.Services.AddCors(options =>
@@ -36,5 +37,6 @@ app.UseCors();
 // Map routes
 app.MapHealthRoutes();
 app.MapExampleRoutes();
+app.MapGreetingRoutes();
 
 app.Run();

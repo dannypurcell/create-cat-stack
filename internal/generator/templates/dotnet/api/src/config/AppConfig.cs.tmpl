@@ -3,27 +3,51 @@ namespace {{.DotnetNamespace}}.API.Config;
 public class AppConfig
 {
     public string DatabaseConnectionString { get; private set; } = string.Empty;
+    public string SqlServerConnectionString { get; private set; } = string.Empty;
+    public string SalesforceInstanceUrl { get; private set; } = string.Empty;
+    public string SalesforceClientId { get; private set; } = string.Empty;
+    public string SalesforceClientSecret { get; private set; } = string.Empty;
+    public string OidcIssuerUrl { get; private set; } = string.Empty;
+    public string OidcClientId { get; private set; } = string.Empty;
+    public string OidcClientSecret { get; private set; } = string.Empty;
     public string Environment { get; private set; } = "development";
 
     /// <summary>
     /// Load configuration from environment variables and Docker secrets.
-    /// Docker secrets are mounted at /run/secrets/ by convention.
+    /// Docker secrets are mounted at /run/secrets/{project}_secret_name by convention.
     /// </summary>
     public static AppConfig Load()
     {
         var config = new AppConfig
         {
             Environment = GetValue("ENVIRONMENT", "development"),
+            OidcIssuerUrl = GetValue("OIDC_ISSUER_URL", ""),
+            OidcClientId = GetValue("OIDC_CLIENT_ID", ""),
+            OidcClientSecret = GetSecret("{{.ProjectName}}_oidc_client_secret", GetValue("OIDC_CLIENT_SECRET", "")),
+            SalesforceInstanceUrl = GetValue("SF_INSTANCE_URL", ""),
+            SalesforceClientId = GetValue("SF_CLIENT_ID", ""),
+            SalesforceClientSecret = GetSecret("{{.ProjectName}}_sf_client_secret", GetValue("SF_CLIENT_SECRET", "")),
         };
 
-        var dbHost = GetValue("DB_HOST", "{{.ProjectName}}-db");
-        var dbPort = GetValue("DB_PORT", "5432");
-        var dbName = GetValue("DB_NAME", "{{.ProjectName}}");
-        var dbUser = GetSecret("db_user", GetValue("DB_USER", "postgres"));
-        var dbPassword = GetSecret("db_password", GetValue("DB_PASSWORD", "postgres"));
-
+        // Postgres — owns all new app state
+        var pgHost = GetValue("PG_HOST", "{{.ProjectName}}-db");
+        var pgPort = GetValue("PG_PORT", "5432");
+        var pgDb = GetValue("PG_DB", "postgres");
+        var pgUser = GetValue("PG_USER", "postgres");
+        var pgPassword = GetSecret("{{.ProjectName}}_db_password", GetValue("PG_PASSWORD", "postgres"));
         config.DatabaseConnectionString =
-            $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+            $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPassword}";
+
+        // MSSQL — read-only access to existing data (optional)
+        var mssqlHost = GetValue("MSSQL_HOST", "");
+        var mssqlDb = GetValue("MSSQL_DB", "");
+        var mssqlUser = GetValue("MSSQL_USER", "");
+        var mssqlPassword = GetSecret("{{.ProjectName}}_mssql_password", GetValue("MSSQL_PASSWORD", ""));
+        if (!string.IsNullOrEmpty(mssqlHost))
+        {
+            config.SqlServerConnectionString =
+                $"Server={mssqlHost};Database={mssqlDb};User Id={mssqlUser};Password={mssqlPassword};TrustServerCertificate=True;";
+        }
 
         return config;
     }

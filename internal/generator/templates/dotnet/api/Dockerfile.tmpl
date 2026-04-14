@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY api/{{.ProjectName}}.Api.csproj .
+COPY api/{{.DotnetNamespace}}.API.csproj .
 RUN dotnet restore
 
 COPY api/ .

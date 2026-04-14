@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY etl/{{.ProjectName}}.Etl.csproj .
+COPY etl/{{.DotnetNamespace}}.ETL.csproj .
 RUN dotnet restore
 
 COPY etl/ .

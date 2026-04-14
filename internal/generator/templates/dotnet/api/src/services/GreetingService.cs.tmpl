@@ -1,0 +1,23 @@
+using {{.DotnetNamespace}}.API.Clients;
+using {{.DotnetNamespace}}.API.Models;
+
+namespace {{.DotnetNamespace}}.API.Services;
+
+public class GreetingService
+{
+    private readonly DatabaseClient _db;
+
+    public GreetingService(DatabaseClient db)
+    {
+        _db = db;
+    }
+
+    public async Task<Greeting?> GetRandomAsync()
+    {
+        return await _db.QuerySingleOrDefaultAsync<Greeting>(
+            @"SELECT id, message, language, created_at AS ""CreatedAt""
+              FROM app.greetings
+              ORDER BY RANDOM()
+              LIMIT 1");
+    }
+}

@@ -9,7 +9,15 @@ default:
 secrets:
     mkdir -p secrets
     [ -f secrets/db_password ]        || (printf "localdevpassword" > secrets/db_password        && echo "created secrets/db_password")
+{{- if eq .Auth "jumpcloud"}}
     [ -f secrets/oidc_client_secret ] || (printf "change-me"        > secrets/oidc_client_secret && echo "created secrets/oidc_client_secret")
+{{- else if eq .Auth "pocket-id"}}
+    [ -f secrets/pocket_id_key ]      || (printf "change-me"        > secrets/pocket_id_key      && echo "created secrets/pocket_id_key")
+{{- end}}
+{{- if .DataProcessing}}
+    [ -f secrets/mssql_password ]     || (printf ""                 > secrets/mssql_password     && echo "created secrets/mssql_password (empty — fill in MSSQL creds)")
+    [ -f secrets/sf_client_secret ]   || (printf ""                 > secrets/sf_client_secret   && echo "created secrets/sf_client_secret (empty — fill in Salesforce creds)")
+{{- end}}
     @echo "secrets/ ready — see .env.example for docs"
 
 up:
@@ -30,8 +38,9 @@ ps:
 clean:
     {{"{{"}}COMPOSE{{"}}"}} down -v --rmi local
 
+# Build and start api + app + db (daily driver — no auth container needed locally)
 dev-up:
-    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-api {{.ProjectName}}-db
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-api {{.ProjectName}}-app {{.ProjectName}}-db
 
 dev-down:
     {{"{{"}}COMPOSE{{"}}"}} down
