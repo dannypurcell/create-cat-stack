@@ -1,8 +1,8 @@
 {{- if eq .CLIClient "tui"}}
 using Terminal.Gui;
-using {{.DotnetNamespace}}.Cli.Clients;
+using {{.DotnetNamespace}}.CLI.Clients;
 
-namespace {{.DotnetNamespace}}.Cli.Commands;
+namespace {{.DotnetNamespace}}.CLI.Commands;
 
 public static class ExampleCommand
 {
@@ -50,9 +50,9 @@ public static class ExampleCommand
 }
 {{- else}}
 using System.CommandLine;
-using {{.DotnetNamespace}}.Cli.Clients;
+using {{.DotnetNamespace}}.CLI.Clients;
 
-namespace {{.DotnetNamespace}}.Cli.Commands;
+namespace {{.DotnetNamespace}}.CLI.Commands;
 
 public static class ExampleCommand
 {

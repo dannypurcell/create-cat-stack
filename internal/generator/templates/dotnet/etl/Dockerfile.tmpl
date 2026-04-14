@@ -12,4 +12,4 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "{{.DotnetNamespace}}.Etl.dll"]
+ENTRYPOINT ["dotnet", "{{.DotnetNamespace}}.ETL.dll"]

@@ -1,6 +1,6 @@
 {{- if eq .CLIClient "tui"}}
 using Terminal.Gui;
-using {{.DotnetNamespace}}.Cli.Commands;
+using {{.DotnetNamespace}}.CLI.Commands;
 
 Application.Init();
 
@@ -34,7 +34,7 @@ finally
 }
 {{- else}}
 using System.CommandLine;
-using {{.DotnetNamespace}}.Cli.Commands;
+using {{.DotnetNamespace}}.CLI.Commands;
 
 var rootCommand = new RootCommand("{{.ProjectName}} CLI");
 rootCommand.AddCommand(ExampleCommand.Create());
