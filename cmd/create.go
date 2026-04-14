@@ -67,6 +67,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 			huh.NewSelect[string]().
 				Title("Authentication Provider").
 				Options(
+					huh.NewOption("JumpCloud (external OIDC)", "jumpcloud"),
 					huh.NewOption("Cloud-native (Cognito)", "cognito"),
 					huh.NewOption("Pocket-ID (self-hosted)", "pocket-id"),
 					huh.NewOption("Auth0", "auth0"),

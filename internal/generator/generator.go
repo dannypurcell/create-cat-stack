@@ -48,6 +48,11 @@ func Generate(cfg config.Config, outputDir string) error {
 			return fs.SkipDir
 		}
 
+		// Skip cli directories if no CLI client is selected
+		if cfg.CLIClient == "none" && d.IsDir() && d.Name() == "cli" {
+			return fs.SkipDir
+		}
+
 		// Compute the output path
 		outPath := filepath.Join(outputDir, relPath)
 

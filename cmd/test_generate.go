@@ -12,17 +12,17 @@ import (
 
 func main() {
 	cfg := config.Config{
-		ProjectName:    "test-claims",
+		ProjectName:    "claims-flow",
 		Backend:        "dotnet",
 		Frontend:       "nextjs",
-		Auth:           "pocket-id",
+		Auth:           "jumpcloud",
 		DataProcessing: true,
-		CLIClient:      "tui",
+		CLIClient:      "none",
 		Deployment:     "local",
-		CICD:           "github-actions",
+		CICD:           "bitbucket",
 	}
 
-	outputDir := "/tmp/test-claims"
+	outputDir := "/tmp/claims-flow"
 	os.RemoveAll(outputDir)
 
 	if err := generator.Generate(cfg, outputDir); err != nil {
