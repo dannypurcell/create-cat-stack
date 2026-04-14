@@ -1,0 +1,115 @@
+set dotenv-load := true
+
+PROJECT := "{{.ProjectName}}"
+COMPOSE  := "docker compose"
+
+default:
+    @just --list
+
+secrets:
+    mkdir -p secrets
+    [ -f secrets/db_password ]        || (printf "localdevpassword" > secrets/db_password        && echo "created secrets/db_password")
+    [ -f secrets/oidc_client_secret ] || (printf "change-me"        > secrets/oidc_client_secret && echo "created secrets/oidc_client_secret")
+    @echo "secrets/ ready — see .env.example for docs"
+
+up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build
+
+down:
+    {{"{{"}}COMPOSE{{"}}"}} down
+
+logs:
+    {{"{{"}}COMPOSE{{"}}"}} logs -f
+
+build:
+    {{"{{"}}COMPOSE{{"}}"}} build
+
+ps:
+    {{"{{"}}COMPOSE{{"}}"}} ps
+
+clean:
+    {{"{{"}}COMPOSE{{"}}"}} down -v --rmi local
+
+dev-up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-api {{.ProjectName}}-db
+
+dev-down:
+    {{"{{"}}COMPOSE{{"}}"}} down
+
+api-up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-api {{.ProjectName}}-db
+
+api-down:
+    {{"{{"}}COMPOSE{{"}}"}} stop {{.ProjectName}}-api
+
+api-logs:
+    {{"{{"}}COMPOSE{{"}}"}} logs -f {{.ProjectName}}-api
+{{- if ne .Frontend "none"}}
+
+app-up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-app
+
+app-down:
+    {{"{{"}}COMPOSE{{"}}"}} stop {{.ProjectName}}-app
+
+app-logs:
+    {{"{{"}}COMPOSE{{"}}"}} logs -f {{.ProjectName}}-app
+{{- end}}
+
+auth-up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-auth
+
+auth-down:
+    {{"{{"}}COMPOSE{{"}}"}} stop {{.ProjectName}}-auth
+
+db-up:
+    {{"{{"}}COMPOSE{{"}}"}} up --build {{.ProjectName}}-db
+
+db-down:
+    {{"{{"}}COMPOSE{{"}}"}} stop {{.ProjectName}}-db
+
+db-logs:
+    {{"{{"}}COMPOSE{{"}}"}} logs -f {{.ProjectName}}-db
+{{- if .DataProcessing}}
+
+etl-run:
+    {{"{{"}}COMPOSE{{"}}"}} run --rm --build -e SCRIPT="$SCRIPT" {{.ProjectName}}-etl
+{{- end}}
+
+schema:
+    {{"{{"}}COMPOSE{{"}}"}} exec {{.ProjectName}}-db pgschema apply --file /schema/main.sql --host localhost --user postgres --db postgres --schema app --auto-approve
+
+snapshot-save:
+    mkdir -p snapshots
+    {{"{{"}}COMPOSE{{"}}"}} exec {{.ProjectName}}-db pg_dump -U postgres postgres > snapshots/$(date +%Y%m%d_%H%M%S).sql
+
+snapshot-load:
+    {{"{{"}}COMPOSE{{"}}"}} exec -T {{.ProjectName}}-db psql -U postgres postgres < "$FILE"
+
+docker-build service:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    CLEAN=$(git log --follow -1 --format=%h -- {{"{{"}}service{{"}}"}}/)
+    if [ "$(git diff HEAD -- {{"{{"}}service{{"}}"}}/ | wc -c)" -gt 0 ] || [ -n "$(git ls-files --others --exclude-standard -- {{"{{"}}service{{"}}"}}/ )" ]; then
+        DIRTY=$( (git diff HEAD -- {{"{{"}}service{{"}}"}}/ ; git ls-files --others --exclude-standard {{"{{"}}service{{"}}"}}/) | sha256sum | cut -c1-7)
+        BUILD_ID="${CLEAN}-${DIRTY}"
+    else
+        BUILD_ID="${CLEAN}"
+    fi
+    docker compose build --build-arg BUILD_ID="${BUILD_ID}" --label build-id="${BUILD_ID}" {{.ProjectName}}-{{"{{"}}service{{"}}"}}
+    echo "{{"{{"}}service{{"}}"}}: built ${BUILD_ID}"
+
+build-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just docker-build api &
+{{- if ne .Frontend "none"}}
+    just docker-build app &
+{{- end}}
+    just docker-build auth &
+    just docker-build db &
+{{- if .DataProcessing}}
+    just docker-build etl &
+{{- end}}
+    wait
+    echo "all images built"

@@ -1,8 +1,0 @@
-language: 'unknown'
-tasks:
-  build:
-    command: 'docker compose build {{.ProjectName}}-auth'
-  up:
-    command: 'docker compose up {{.ProjectName}}-auth -d'
-  logs:
-    command: 'docker compose logs {{.ProjectName}}-auth -f'

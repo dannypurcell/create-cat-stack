@@ -1,0 +1,14 @@
+default:
+    @just --list
+
+docker-build:
+    cd .. && just docker-build auth
+
+up:
+    cd .. && just auth-up
+
+down:
+    cd .. && just auth-down
+
+logs:
+    cd .. && just auth-logs

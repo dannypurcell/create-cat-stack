@@ -1,0 +1,23 @@
+default:
+    @just --list
+
+docker-build:
+    cd .. && just docker-build db
+
+up:
+    cd .. && just db-up
+
+down:
+    cd .. && just db-down
+
+logs:
+    cd .. && just db-logs
+
+schema:
+    cd .. && just schema
+
+snapshot-save:
+    cd .. && just snapshot-save
+
+snapshot-load:
+    cd .. && just snapshot-load

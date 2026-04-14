@@ -1,0 +1,23 @@
+default:
+    @just --list
+
+build:
+    dotnet build
+
+test:
+    dotnet test
+
+run:
+    dotnet run
+
+docker-build:
+    cd .. && just docker-build api
+
+up:
+    cd .. && just api-up
+
+down:
+    cd .. && just api-down
+
+logs:
+    cd .. && just api-logs

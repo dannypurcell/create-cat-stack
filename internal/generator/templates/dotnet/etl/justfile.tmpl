@@ -1,0 +1,20 @@
+default:
+    @just --list
+
+build:
+    dotnet build
+
+test:
+    dotnet test
+
+run:
+    dotnet run
+
+docker-build:
+    cd .. && just docker-build etl
+
+up:
+    cd .. && just etl-run
+
+logs:
+    cd .. && just db-logs

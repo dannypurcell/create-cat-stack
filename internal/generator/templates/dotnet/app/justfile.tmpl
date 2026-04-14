@@ -1,0 +1,20 @@
+default:
+    @just --list
+
+dev:
+    npm run dev
+
+build:
+    npm run build
+
+docker-build:
+    cd .. && just docker-build app
+
+up:
+    cd .. && just app-up
+
+down:
+    cd .. && just app-down
+
+logs:
+    cd .. && just app-logs
