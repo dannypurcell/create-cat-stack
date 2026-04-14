@@ -1,0 +1,123 @@
+FROM pgvector/pgvector:pg18
+
+# Install pgschema (auto-detect architecture for amd64/arm64)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && ARCH=$(dpkg --print-architecture) \
+    && curl -LO https://github.com/pgplex/pgschema/releases/download/v1.6.2/pgschema_1.6.2_${ARCH}.deb \
+    && dpkg -i pgschema_1.6.2_${ARCH}.deb \
+    && rm pgschema_1.6.2_${ARCH}.deb \
+    && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
+# Copy schema files
+COPY schema/ /schema/
+
+# Database-level setup (extensions, schema, search_path) — runs once on fresh PGDATA.
+# Not managed by pgschema; must exist before pgschema can diff against the live db.
+RUN cat <<'EOF' > /docker-entrypoint-initdb.d/00-init.sh
+#!/bin/bash
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f /schema/init.sql
+EOF
+RUN chmod +x /docker-entrypoint-initdb.d/00-init.sh
+
+# Configure pg_hba.conf to allow trust auth for all addresses (needed for Docker networks)
+RUN cat <<'EOF' > /docker-entrypoint-initdb.d/00-hba.sh
+#!/bin/bash
+PG_HBA="/var/lib/postgresql/data/pg_hba.conf"
+if [ -f "$PG_HBA" ]; then
+    sed -i 's/^host all all all scram-sha-256$/host all all all trust/' "$PG_HBA"
+fi
+EOF
+RUN chmod +x /docker-entrypoint-initdb.d/00-hba.sh
+
+# Initial schema applied via plain psql on first boot only.
+# pgschema in the entrypoint handles all subsequent migrations.
+RUN cat <<'EOF' > /docker-entrypoint-initdb.d/01-schema.sh
+#!/bin/bash
+cd /schema && psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f main.sql
+EOF
+RUN chmod +x /docker-entrypoint-initdb.d/01-schema.sh
+
+# Entrypoint: starts postgres in the background, waits for it to be ready,
+# runs pgschema (no-op if schema is current, applies diffs otherwise),
+# then waits for postgres to exit. Signals are forwarded for graceful shutdown.
+RUN cat <<'STARTEOF' > /usr/local/bin/start.sh
+#!/bin/bash
+set -e
+
+docker-entrypoint.sh postgres &
+PG_PID=$!
+
+trap "kill -TERM $PG_PID" TERM INT
+
+until pg_isready -U "${POSTGRES_USER:-postgres}" -h localhost -q; do
+    sleep 1
+done
+
+# Ensure pg_hba.conf allows trust auth for Docker networks
+PG_HBA="/var/lib/postgresql/data/pg_hba.conf"
+if [ -f "$PG_HBA" ]; then
+    if grep -q "^host all all all scram-sha-256$" "$PG_HBA"; then
+        sed -i 's/^host all all all scram-sha-256$/host all all all trust/' "$PG_HBA"
+        psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -c "SELECT pg_reload_conf();" > /dev/null
+    fi
+fi
+
+# Run pgschema with logging suppression. Returns 0 on success.
+run_pgschema() {
+    local PG_USER="${POSTGRES_USER:-postgres}"
+    local PG_DB="${POSTGRES_DB:-postgres}"
+    psql -U "$PG_USER" -d "$PG_DB" -c "ALTER SYSTEM SET log_statement = 'none';" > /dev/null 2>&1
+    psql -U "$PG_USER" -d "$PG_DB" -c "ALTER SYSTEM SET log_min_duration_statement = -1;" > /dev/null 2>&1
+    psql -U "$PG_USER" -d "$PG_DB" -c "SELECT pg_reload_conf();" > /dev/null 2>&1
+
+    pgschema apply \
+        --file /schema/main.sql \
+        --host localhost \
+        --user "$PG_USER" \
+        --db "$PG_DB" \
+        --schema app \
+        --plan-host localhost \
+        --plan-user "$PG_USER" \
+        --plan-db "$PG_DB" \
+        --auto-approve
+    local RESULT=$?
+
+    psql -U "$PG_USER" -d "$PG_DB" -c "ALTER SYSTEM SET log_statement = 'all';" > /dev/null 2>&1
+    psql -U "$PG_USER" -d "$PG_DB" -c "ALTER SYSTEM SET log_min_duration_statement = 1000;" > /dev/null 2>&1
+    psql -U "$PG_USER" -d "$PG_DB" -c "SELECT pg_reload_conf();" > /dev/null 2>&1
+
+    return $RESULT
+}
+
+# pgschema retry loop — runs in background so postgres keeps running on failure.
+pgschema_retry_loop() {
+    while true; do
+        sleep 60
+        if run_pgschema; then
+            echo "[$(date -Iseconds)] pgschema applied successfully"
+            rm -f /tmp/pgschema-failed
+            exit 0
+        else
+            echo "[$(date -Iseconds)] pgschema failed, retrying in 60s..."
+        fi
+    done
+}
+
+set +e
+run_pgschema
+if [ $? -eq 0 ]; then
+    echo "[$(date -Iseconds)] pgschema applied successfully"
+    rm -f /tmp/pgschema-failed
+else
+    echo "[$(date -Iseconds)] pgschema failed, retrying in 60s..."
+    touch /tmp/pgschema-failed
+    pgschema_retry_loop &
+fi
+set -e
+
+wait $PG_PID
+STARTEOF
+RUN chmod +x /usr/local/bin/start.sh
+
+ENTRYPOINT ["/usr/local/bin/start.sh"]

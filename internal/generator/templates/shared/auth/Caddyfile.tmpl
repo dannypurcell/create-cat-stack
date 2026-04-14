@@ -1,0 +1,54 @@
+{{- if eq .Auth "pocket-id" -}}
+# Caddyfile for {{.ProjectName}}
+# Pocket-ID runs on localhost:1411 inside this container.
+# API and app are separate containers on the Docker network.
+
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
+
+	# Auth endpoints — proxy to local pocket-id
+	handle /api/oidc/* {
+		reverse_proxy localhost:1411
+	}
+
+	# API routes
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy {{.ProjectName}}-api:8080
+	}
+
+	# Everything else — app frontend{{- if ne .Frontend "none" }}
+	handle {
+		reverse_proxy {{.ProjectName}}-app:3000
+	}
+	{{- else }}
+	handle {
+		respond "{{.ProjectName}} API is running. No frontend configured." 200
+	}
+	{{- end}}
+}
+{{- else -}}
+# Caddyfile for {{.ProjectName}}
+# Auth provider: {{.Auth}} (external)
+# API and app are separate containers on the Docker network.
+
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
+
+	# API routes
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy {{.ProjectName}}-api:8080
+	}
+
+	# Everything else — app frontend{{- if ne .Frontend "none" }}
+	handle {
+		reverse_proxy {{.ProjectName}}-app:3000
+	}
+	{{- else }}
+	handle {
+		respond "{{.ProjectName}} API is running. No frontend configured." 200
+	}
+	{{- end}}
+}
+{{- end}}

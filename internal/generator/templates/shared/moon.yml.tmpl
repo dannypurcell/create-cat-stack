@@ -1,0 +1,17 @@
+language: 'unknown'
+tasks:
+  dev:
+    command: 'docker compose up --build'
+    local: true
+  build:
+    command: 'docker compose build'
+    local: true
+  down:
+    command: 'docker compose down'
+    local: true
+  logs:
+    command: 'docker compose logs -f'
+    local: true
+  clean:
+    command: 'docker compose down -v --rmi local'
+    local: true

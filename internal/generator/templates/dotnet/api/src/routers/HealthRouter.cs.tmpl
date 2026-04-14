@@ -1,0 +1,9 @@
+namespace {{.DotnetNamespace}}.Api.Routers;
+
+public static class HealthRouter
+{
+    public static void MapHealthRoutes(this WebApplication app)
+    {
+        app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+    }
+}

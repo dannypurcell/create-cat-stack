@@ -1,0 +1,44 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using {{.DotnetNamespace}}.Etl.Clients;
+using {{.DotnetNamespace}}.Etl.Jobs;
+
+// Determine which job to run from the SCRIPT environment variable.
+// Usage: SCRIPT=example docker compose run etl
+var script = Environment.GetEnvironmentVariable("SCRIPT")
+    ?? throw new InvalidOperationException("SCRIPT environment variable is required. Set it to the job name to run.");
+
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((_, services) =>
+    {
+        services.AddSingleton<DatabaseClient>();
+        services.AddTransient<ExampleJob>();
+    })
+    .Build();
+
+var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("EtlRunner");
+
+logger.LogInformation("Starting ETL job: {Script}", script);
+
+try
+{
+    switch (script.ToLowerInvariant())
+    {
+        case "example":
+            var job = host.Services.GetRequiredService<ExampleJob>();
+            await job.RunAsync();
+            break;
+        default:
+            logger.LogError("Unknown job script: {Script}", script);
+            Environment.Exit(1);
+            break;
+    }
+
+    logger.LogInformation("ETL job {Script} completed successfully", script);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "ETL job {Script} failed", script);
+    Environment.Exit(1);
+}

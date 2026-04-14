@@ -1,0 +1,58 @@
+using System.Data;
+using Dapper;
+using Npgsql;
+
+namespace {{.DotnetNamespace}}.Etl.Clients;
+
+public class DatabaseClient
+{
+    private readonly string _connectionString;
+
+    public DatabaseClient()
+    {
+        var host = GetSecret("db_host", GetEnv("DB_HOST", "{{.ProjectName}}-db"));
+        var port = GetEnv("DB_PORT", "5432");
+        var dbName = GetEnv("DB_NAME", "{{.ProjectName}}");
+        var user = GetSecret("db_user", GetEnv("DB_USER", "postgres"));
+        var password = GetSecret("db_password", GetEnv("DB_PASSWORD", "postgres"));
+
+        _connectionString = $"Host={host};Port={port};Database={dbName};Username={user};Password={password}";
+    }
+
+    private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
+
+    public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QueryAsync<T>(sql, param);
+    }
+
+    public async Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<T>(sql, param);
+    }
+
+    public async Task<T> QuerySingleAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QuerySingleAsync<T>(sql, param);
+    }
+
+    public async Task<int> ExecuteAsync(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.ExecuteAsync(sql, param);
+    }
+
+    private static string GetSecret(string name, string fallback)
+    {
+        var path = $"/run/secrets/{name}";
+        return File.Exists(path) ? File.ReadAllText(path).Trim() : fallback;
+    }
+
+    private static string GetEnv(string name, string fallback)
+    {
+        return Environment.GetEnvironmentVariable(name) ?? fallback;
+    }
+}

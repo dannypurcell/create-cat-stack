@@ -1,0 +1,13 @@
+services:
+  {{.ProjectName}}-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - {{.ProjectName}}-api
+    restart: unless-stopped

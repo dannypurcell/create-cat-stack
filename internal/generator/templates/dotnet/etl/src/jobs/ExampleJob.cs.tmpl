@@ -1,0 +1,56 @@
+using Microsoft.Extensions.Logging;
+using {{.DotnetNamespace}}.Etl.Clients;
+
+namespace {{.DotnetNamespace}}.Etl.Jobs;
+
+/// <summary>
+/// Example ETL job demonstrating the check-then-run pattern.
+/// Each job should implement Check() to validate preconditions
+/// and Run() to perform the actual work.
+/// </summary>
+public class ExampleJob
+{
+    private readonly DatabaseClient _db;
+    private readonly ILogger<ExampleJob> _logger;
+
+    public ExampleJob(DatabaseClient db, ILogger<ExampleJob> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Validate that all preconditions are met before running the job.
+    /// Throws if the job should not proceed.
+    /// </summary>
+    public async Task CheckAsync()
+    {
+        // Verify database connectivity
+        var result = await _db.QuerySingleAsync<int>("SELECT 1");
+        if (result != 1)
+            throw new InvalidOperationException("Database health check failed");
+
+        _logger.LogInformation("Precondition checks passed");
+    }
+
+    /// <summary>
+    /// Execute the ETL job. Call CheckAsync() first.
+    /// </summary>
+    public async Task RunAsync()
+    {
+        await CheckAsync();
+
+        _logger.LogInformation("Running example ETL job...");
+
+        // Example: count rows in a table
+        var count = await _db.QuerySingleOrDefaultAsync<long>(
+            "SELECT count(*) FROM examples");
+
+        _logger.LogInformation("Found {Count} example records", count);
+
+        // TODO: Replace with actual ETL logic
+        // - Extract: query source data
+        // - Transform: map/clean/enrich
+        // - Load: upsert into target tables
+    }
+}

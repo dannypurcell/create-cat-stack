@@ -1,0 +1,47 @@
+namespace {{.DotnetNamespace}}.Api.Config;
+
+public class AppConfig
+{
+    public string DatabaseConnectionString { get; private set; } = string.Empty;
+    public string Environment { get; private set; } = "development";
+
+    /// <summary>
+    /// Load configuration from environment variables and Docker secrets.
+    /// Docker secrets are mounted at /run/secrets/ by convention.
+    /// </summary>
+    public static AppConfig Load()
+    {
+        var config = new AppConfig
+        {
+            Environment = GetValue("ENVIRONMENT", "development"),
+        };
+
+        var dbHost = GetValue("DB_HOST", "{{.ProjectName}}-db");
+        var dbPort = GetValue("DB_PORT", "5432");
+        var dbName = GetValue("DB_NAME", "{{.ProjectName}}");
+        var dbUser = GetSecret("db_user", GetValue("DB_USER", "postgres"));
+        var dbPassword = GetSecret("db_password", GetValue("DB_PASSWORD", "postgres"));
+
+        config.DatabaseConnectionString =
+            $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+
+        return config;
+    }
+
+    /// <summary>
+    /// Read a Docker secret from /run/secrets/{name}, falling back to a default value.
+    /// Works identically in local Docker Compose and cloud orchestrators.
+    /// </summary>
+    private static string GetSecret(string name, string fallback)
+    {
+        var path = $"/run/secrets/{name}";
+        return File.Exists(path)
+            ? File.ReadAllText(path).Trim()
+            : fallback;
+    }
+
+    private static string GetValue(string envVar, string fallback)
+    {
+        return System.Environment.GetEnvironmentVariable(envVar) ?? fallback;
+    }
+}

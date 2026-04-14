@@ -1,0 +1,101 @@
+{{- if eq .CLIClient "tui"}}
+using Terminal.Gui;
+using {{.DotnetNamespace}}.Cli.Clients;
+
+namespace {{.DotnetNamespace}}.Cli.Commands;
+
+public static class ExampleCommand
+{
+    public static void ShowExampleList(Window parent)
+    {
+        var client = new ApiClient();
+
+        var dialog = new Dialog("Examples")
+        {
+            Width = Dim.Percent(80),
+            Height = Dim.Percent(80),
+        };
+
+        var listView = new ListView()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(1),
+        };
+
+        var closeButton = new Button("_Close");
+        closeButton.Accept += (s, e) => Application.RequestStop();
+
+        // Load data asynchronously
+        Task.Run(async () =>
+        {
+            try
+            {
+                var examples = await client.GetExamplesAsync();
+                var items = examples.Select(e => $"[{e.Id}] {e.Name}: {e.Description}").ToList();
+                Application.Invoke(() => listView.SetSource(items));
+            }
+            catch (Exception ex)
+            {
+                Application.Invoke(() =>
+                    MessageBox.ErrorQuery("Error", $"Failed to load examples: {ex.Message}", "_OK"));
+            }
+        });
+
+        dialog.Add(listView);
+        dialog.AddButton(closeButton);
+        Application.Run(dialog);
+    }
+}
+{{- else}}
+using System.CommandLine;
+using {{.DotnetNamespace}}.Cli.Clients;
+
+namespace {{.DotnetNamespace}}.Cli.Commands;
+
+public static class ExampleCommand
+{
+    public static Command Create()
+    {
+        var command = new Command("examples", "Manage examples");
+
+        var listCommand = new Command("list", "List all examples");
+        listCommand.SetHandler(async () =>
+        {
+            var client = new ApiClient();
+            var examples = await client.GetExamplesAsync();
+
+            foreach (var example in examples)
+            {
+                Console.WriteLine($"[{example.Id}] {example.Name}: {example.Description}");
+            }
+        });
+
+        var getCommand = new Command("get", "Get an example by ID");
+        var idArg = new Argument<int>("id", "The example ID");
+        getCommand.AddArgument(idArg);
+        getCommand.SetHandler(async (int id) =>
+        {
+            var client = new ApiClient();
+            var example = await client.GetExampleAsync(id);
+            if (example is not null)
+            {
+                Console.WriteLine($"ID:          {example.Id}");
+                Console.WriteLine($"Name:        {example.Name}");
+                Console.WriteLine($"Description: {example.Description}");
+                Console.WriteLine($"Created:     {example.CreatedAt}");
+            }
+            else
+            {
+                Console.Error.WriteLine($"Example {id} not found");
+            }
+        }, idArg);
+
+        command.AddCommand(listCommand);
+        command.AddCommand(getCommand);
+
+        return command;
+    }
+}
+{{- end}}

@@ -1,0 +1,42 @@
+using System.Data;
+using Dapper;
+using Npgsql;
+using {{.DotnetNamespace}}.Api.Config;
+
+namespace {{.DotnetNamespace}}.Api.Clients;
+
+public class DatabaseClient
+{
+    private readonly string _connectionString;
+
+    public DatabaseClient(AppConfig config)
+    {
+        _connectionString = config.DatabaseConnectionString;
+    }
+
+    private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
+
+    public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QueryAsync<T>(sql, param);
+    }
+
+    public async Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<T>(sql, param);
+    }
+
+    public async Task<T> QuerySingleAsync<T>(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.QuerySingleAsync<T>(sql, param);
+    }
+
+    public async Task<int> ExecuteAsync(string sql, object? param = null)
+    {
+        using var conn = CreateConnection();
+        return await conn.ExecuteAsync(sql, param);
+    }
+}

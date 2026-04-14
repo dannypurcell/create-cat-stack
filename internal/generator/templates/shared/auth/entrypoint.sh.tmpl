@@ -1,0 +1,84 @@
+#!/bin/sh
+set -e
+
+# DOMAIN — base domain (e.g. example.com). Defaults to localhost for local dev.
+DOMAIN="${DOMAIN:-localhost}"
+
+if [ "$DOMAIN" = "localhost" ]; then
+    export SITE_ADDRESS="http://localhost"
+    export AUTH_ADDRESS="http://localhost:1411"
+else
+    export SITE_ADDRESS="https://${DOMAIN}"
+    export AUTH_ADDRESS="https://auth.${DOMAIN}"
+fi
+
+{{- if eq .Auth "pocket-id"}}
+
+# --- Start pocket-id in background ---
+# ENCRYPTION_KEY must be stable across restarts (changing it logs everyone out).
+# Generate once and store on the persistent data volume.
+
+mkdir -p /srv/data
+rm -f /srv/data/*.lock /srv/data/pocket-id.lock 2>/dev/null || true
+sqlite3 /srv/data/pocket-id.db "DELETE FROM kv WHERE key='application_lock';" 2>/dev/null || true
+KEY_FILE=/srv/data/encryption_key
+if [ ! -f "$KEY_FILE" ]; then
+    head -c 32 /dev/urandom | base64 | tr -d '\n' > "$KEY_FILE"
+    chmod 600 "$KEY_FILE"
+fi
+
+export APP_URL="${AUTH_ADDRESS}"
+export APP_NAME="{{.ProjectName}}"
+export SESSION_DURATION=1440
+export ALLOWED_USER_CREATION_TYPE=token
+export UI_CONFIG_DISABLED=true
+export TRUST_PROXY=true
+export VERSION_CHECK_DISABLED=true
+export ANALYTICS_DISABLED=true
+export ENCRYPTION_KEY=$(cat "$KEY_FILE")
+
+pocket-id &
+POCKET_ID_PID=$!
+
+echo "Waiting for pocket-id..."
+until wget -qO /dev/null http://localhost:1411 2>/dev/null; do
+    sleep 1
+done
+echo "pocket-id ready."
+
+# --- Seed OIDC client (idempotent) ---
+
+DB=/srv/data/pocket-id.db
+CLIENT_ID={{.ProjectName}}-app
+
+if [ "$DOMAIN" = "localhost" ]; then
+    CALLBACK_URLS='["http://localhost/"]'
+    LOGOUT_URLS='["http://localhost/"]'
+    LAUNCH_URL='http://localhost/'
+else
+    CALLBACK_URLS="[\"https://${DOMAIN}/\",\"https://*.${DOMAIN}/\"]"
+    LOGOUT_URLS="[\"https://${DOMAIN}/\",\"https://*.${DOMAIN}/\"]"
+    LAUNCH_URL="https://${DOMAIN}/"
+fi
+
+echo "Seeding OIDC client '${CLIENT_ID}'..."
+sqlite3 "$DB" "INSERT INTO oidc_clients (
+    id, created_at, name, secret, callback_urls, created_by_id,
+    is_public, pkce_enabled, logout_callback_urls, credentials,
+    launch_url, requires_reauthentication, image_type, dark_image_type, is_group_restricted
+) VALUES (
+    '${CLIENT_ID}', datetime('now'), '{{.ProjectName}}', NULL,
+    '${CALLBACK_URLS}', NULL, 1, 1,
+    '${LOGOUT_URLS}', '{\"federatedIdentities\":[]}',
+    '${LAUNCH_URL}', 0, 'svg', 'svg', 0
+) ON CONFLICT(id) DO UPDATE SET
+    launch_url='${LAUNCH_URL}',
+    callback_urls='${CALLBACK_URLS}',
+    logout_callback_urls='${LOGOUT_URLS}';" || true
+echo "OIDC client '${CLIENT_ID}' seeded."
+
+trap "kill $POCKET_ID_PID 2>/dev/null; exit" INT TERM
+{{- end}}
+
+# --- Start Caddy (foreground) ---
+exec caddy run --config /etc/caddy/Caddyfile

@@ -1,0 +1,54 @@
+using {{.DotnetNamespace}}.Api.Clients;
+using {{.DotnetNamespace}}.Api.Models;
+
+namespace {{.DotnetNamespace}}.Api.Services;
+
+public class ExampleService
+{
+    private readonly DatabaseClient _db;
+
+    public ExampleService(DatabaseClient db)
+    {
+        _db = db;
+    }
+
+    public async Task<IEnumerable<Example>> GetAllAsync()
+    {
+        return await _db.QueryAsync<Example>(
+            "SELECT id, name, description, created_at, updated_at FROM examples ORDER BY created_at DESC");
+    }
+
+    public async Task<Example?> GetByIdAsync(int id)
+    {
+        return await _db.QuerySingleOrDefaultAsync<Example>(
+            "SELECT id, name, description, created_at, updated_at FROM examples WHERE id = @Id",
+            new { Id = id });
+    }
+
+    public async Task<Example> CreateAsync(CreateExampleRequest request)
+    {
+        return await _db.QuerySingleAsync<Example>(
+            @"INSERT INTO examples (name, description)
+              VALUES (@Name, @Description)
+              RETURNING id, name, description, created_at, updated_at",
+            new { request.Name, request.Description });
+    }
+
+    public async Task<Example?> UpdateAsync(int id, UpdateExampleRequest request)
+    {
+        return await _db.QuerySingleOrDefaultAsync<Example>(
+            @"UPDATE examples
+              SET name = @Name, description = @Description, updated_at = now()
+              WHERE id = @Id
+              RETURNING id, name, description, created_at, updated_at",
+            new { Id = id, request.Name, request.Description });
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var rows = await _db.ExecuteAsync(
+            "DELETE FROM examples WHERE id = @Id",
+            new { Id = id });
+        return rows > 0;
+    }
+}

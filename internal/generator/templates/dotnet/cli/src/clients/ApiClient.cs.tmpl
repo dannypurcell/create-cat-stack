@@ -1,0 +1,36 @@
+using System.Net.Http.Json;
+
+namespace {{.DotnetNamespace}}.Cli.Clients;
+
+public record ExampleDto
+{
+    public int Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
+}
+
+public class ApiClient
+{
+    private readonly HttpClient _http;
+
+    public ApiClient()
+    {
+        var baseUrl = Environment.GetEnvironmentVariable("API_URL") ?? "http://localhost:8080";
+        _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+    }
+
+    public async Task<IReadOnlyList<ExampleDto>> GetExamplesAsync()
+    {
+        var result = await _http.GetFromJsonAsync<List<ExampleDto>>("/examples");
+        return result ?? new List<ExampleDto>();
+    }
+
+    public async Task<ExampleDto?> GetExampleAsync(int id)
+    {
+        var response = await _http.GetAsync($"/examples/{id}");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ExampleDto>();
+    }
+}

@@ -1,0 +1,31 @@
+services:
+  {{.ProjectName}}-auth:
+    image: {{.ProjectName}}-auth:latest
+    build:
+      context: ..
+      dockerfile: auth/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+{{- if eq .Auth "pocket-id"}}
+      - "1411:1411"   # Pocket-ID admin UI
+{{- end}}
+    volumes:
+      - caddy-data:/data
+{{- if eq .Auth "pocket-id"}}
+      - pocket-id-data:/srv/data
+{{- end}}
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    networks:
+      - {{.ProjectName}}-network
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+{{- if eq .Auth "pocket-id"}}
+  pocket-id-data:
+{{- end}}
+
+networks:
+  {{.ProjectName}}-network:

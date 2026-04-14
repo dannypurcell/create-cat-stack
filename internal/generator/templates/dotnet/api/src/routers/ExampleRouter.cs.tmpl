@@ -1,0 +1,48 @@
+using {{.DotnetNamespace}}.Api.Models;
+using {{.DotnetNamespace}}.Api.Services;
+
+namespace {{.DotnetNamespace}}.Api.Routers;
+
+public static class ExampleRouter
+{
+    public static void MapExampleRoutes(this WebApplication app)
+    {
+        var group = app.MapGroup("/examples");
+
+        group.MapGet("/", async (ExampleService service) =>
+        {
+            var examples = await service.GetAllAsync();
+            return Results.Ok(examples);
+        });
+
+        group.MapGet("/{id:int}", async (int id, ExampleService service) =>
+        {
+            var example = await service.GetByIdAsync(id);
+            return example is not null
+                ? Results.Ok(example)
+                : Results.NotFound();
+        });
+
+        group.MapPost("/", async (CreateExampleRequest request, ExampleService service) =>
+        {
+            var created = await service.CreateAsync(request);
+            return Results.Created($"/examples/{created.Id}", created);
+        });
+
+        group.MapPut("/{id:int}", async (int id, UpdateExampleRequest request, ExampleService service) =>
+        {
+            var updated = await service.UpdateAsync(id, request);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound();
+        });
+
+        group.MapDelete("/{id:int}", async (int id, ExampleService service) =>
+        {
+            var deleted = await service.DeleteAsync(id);
+            return deleted
+                ? Results.NoContent()
+                : Results.NotFound();
+        });
+    }
+}

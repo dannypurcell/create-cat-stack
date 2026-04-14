@@ -1,0 +1,9 @@
+# IDE
+.idea/
+.vscode/
+
+# Go build output
+create-cat-stack
+
+# Test-generated projects
+/tmp/

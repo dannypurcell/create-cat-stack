@@ -1,0 +1,10 @@
+language: 'javascript'
+tasks:
+  dev:
+    command: 'npm run dev'
+  build:
+    command: 'npm run build'
+  docker-build:
+    command: 'docker compose build {{.ProjectName}}-app'
+  docker-up:
+    command: 'docker compose up {{.ProjectName}}-app -d'

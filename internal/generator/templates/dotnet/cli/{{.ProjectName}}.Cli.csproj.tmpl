@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>{{.DotnetNamespace}}.Cli</RootNamespace>
+    <AssemblyName>{{.DotnetNamespace}}.Cli</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+{{- if eq .CLIClient "tui"}}
+    <PackageReference Include="Terminal.Gui" Version="2.0.*" />
+{{- else}}
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.*" />
+{{- end}}
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.*" />
+  </ItemGroup>
+
+</Project>

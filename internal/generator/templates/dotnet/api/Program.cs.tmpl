@@ -1,0 +1,40 @@
+using {{.DotnetNamespace}}.Api.Config;
+using {{.DotnetNamespace}}.Api.Clients;
+using {{.DotnetNamespace}}.Api.Services;
+using {{.DotnetNamespace}}.Api.Routers;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configuration
+var appConfig = AppConfig.Load();
+builder.Services.AddSingleton(appConfig);
+
+// Clients
+builder.Services.AddSingleton<DatabaseClient>();
+
+// Services
+builder.Services.AddScoped<ExampleService>();
+
+// CORS for local dev (app container -> api container)
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://{{.ProjectName}}-app:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+var app = builder.Build();
+
+app.UseCors();
+
+// Map routes
+app.MapHealthRoutes();
+app.MapExampleRoutes();
+
+app.Run();

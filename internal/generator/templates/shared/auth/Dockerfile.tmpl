@@ -1,0 +1,29 @@
+{{- if eq .Auth "pocket-id" -}}
+# Stage 1 — Extract pocket-id binary
+FROM ghcr.io/pocket-id/pocket-id:v2 AS pocket-id
+
+# Stage 2 — Runtime: Caddy + pocket-id
+FROM caddy:alpine
+RUN apk add --no-cache ca-certificates curl sqlite
+
+COPY --from=pocket-id /app/pocket-id /usr/local/bin/pocket-id
+
+COPY auth/Caddyfile /etc/caddy/Caddyfile
+COPY auth/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80 443
+ENTRYPOINT ["/entrypoint.sh"]
+{{- else -}}
+# Auth provider: {{.Auth}}
+# Caddy reverse proxy — routes to API, app, and external auth provider
+FROM caddy:alpine
+RUN apk add --no-cache ca-certificates curl
+
+COPY auth/Caddyfile /etc/caddy/Caddyfile
+COPY auth/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80 443
+ENTRYPOINT ["/entrypoint.sh"]
+{{- end}}

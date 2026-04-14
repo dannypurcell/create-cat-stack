@@ -1,0 +1,24 @@
+export default function Home() {
+  return (
+    <main style={{"{{"}} padding: "2rem" {{"}}"}}>
+      <h1>{{.ProjectName}}</h1>
+      <p>Your application is running.</p>
+      <section>
+        <h2>API Status</h2>
+        <HealthCheck />
+      </section>
+    </main>
+  );
+}
+
+async function HealthCheck() {
+  try {
+    const res = await fetch("http://localhost:8080/health", {
+      cache: "no-store",
+    });
+    const data = await res.json();
+    return <p>API: {data.status}</p>;
+  } catch {
+    return <p>API: unreachable</p>;
+  }
+}

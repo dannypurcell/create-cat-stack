@@ -1,0 +1,43 @@
+{{- if eq .CLIClient "tui"}}
+using Terminal.Gui;
+using {{.DotnetNamespace}}.Cli.Commands;
+
+Application.Init();
+
+try
+{
+    var top = Application.Top;
+
+    var win = new Window("{{.ProjectName}}")
+    {
+        X = 0,
+        Y = 1,
+        Width = Dim.Fill(),
+        Height = Dim.Fill()
+    };
+
+    var menu = new MenuBar(new MenuBarItem[]
+    {
+        new("_File", new MenuItem[]
+        {
+            new("_Examples", "", () => ExampleCommand.ShowExampleList(win)),
+            new("_Quit", "", () => Application.RequestStop()),
+        }),
+    });
+
+    top.Add(menu, win);
+    Application.Run();
+}
+finally
+{
+    Application.Shutdown();
+}
+{{- else}}
+using System.CommandLine;
+using {{.DotnetNamespace}}.Cli.Commands;
+
+var rootCommand = new RootCommand("{{.ProjectName}} CLI");
+rootCommand.AddCommand(ExampleCommand.Create());
+
+return await rootCommand.InvokeAsync(args);
+{{- end}}
