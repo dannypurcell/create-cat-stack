@@ -1,0 +1,58 @@
+'use client';
+
+import { createTheme } from '@mui/material/styles';
+
+export const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1565c0',
+    },
+    background: {
+      default: '#f5f5f5',
+      paper: '#fff',
+    },
+  },
+  typography: {
+    fontFamily: [
+      '"Inter"',
+      '"Roboto"',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+    button: {
+      textTransform: 'none',
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          borderRadius: '0.5rem',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '0.5rem',
+          boxShadow: '0px 1px 3px 0px hsla(0, 0%, 13%, 0.1)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: '0.5rem',
+        },
+      },
+    },
+  },
+});

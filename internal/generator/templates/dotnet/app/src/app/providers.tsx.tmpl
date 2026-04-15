@@ -1,19 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { theme } from '@/config/theme';
 import { GreetingServiceProvider } from '@/providers';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: { main: '#1565c0' },
-    background: { default: '#f5f5f5' },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
 
 interface ProvidersProps {
   children: ReactNode;
