@@ -17,7 +17,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 {{- else if eq .Auth "jumpcloud" -}}
 # Auth provider: jumpcloud
 # Stage 1 — Build Caddy with caddy-security (OIDC/OAuth2) plugin via xcaddy
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 RUN xcaddy build \
