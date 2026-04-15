@@ -1,0 +1,28 @@
+'use client';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { API_BASE } from '@/config/api';
+import { GreetingClient } from '@/clients/GreetingClient';
+import { GreetingService } from '@/services/GreetingService';
+
+const GreetingServiceContext = createContext<GreetingService | undefined>(undefined);
+
+interface GreetingServiceProviderProps {
+  children: ReactNode;
+}
+
+export function GreetingServiceProvider({ children }: GreetingServiceProviderProps) {
+  const service = useMemo(() => new GreetingService(new GreetingClient(API_BASE)), []);
+  return (
+    <GreetingServiceContext.Provider value={service}>
+      {children}
+    </GreetingServiceContext.Provider>
+  );
+}
+
+export function useGreetingService(): GreetingService {
+  const context = useContext(GreetingServiceContext);
+  if (!context) {
+    throw new Error('useGreetingService must be used within a GreetingServiceProvider');
+  }
+  return context;
+}

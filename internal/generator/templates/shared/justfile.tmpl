@@ -11,6 +11,7 @@ secrets:
     [ -f secrets/db_password ]        || (printf "localdevpassword" > secrets/db_password        && echo "created secrets/db_password")
 {{- if eq .Auth "jumpcloud"}}
     [ -f secrets/oidc_client_secret ] || (printf "change-me"        > secrets/oidc_client_secret && echo "created secrets/oidc_client_secret")
+    [ -f secrets/jwt_shared_key ]     || (openssl rand -hex 32      > secrets/jwt_shared_key     && echo "created secrets/jwt_shared_key (random)")
 {{- else if eq .Auth "pocket-id"}}
     [ -f secrets/pocket_id_key ]      || (printf "change-me"        > secrets/pocket_id_key      && echo "created secrets/pocket_id_key")
 {{- end}}

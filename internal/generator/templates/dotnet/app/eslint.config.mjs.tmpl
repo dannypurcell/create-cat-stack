@@ -1,0 +1,49 @@
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'node_modules/**',
+    '.git/**',
+    'dist/**',
+  ]),
+  {
+    rules: {
+      'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
+      'prefer-arrow-callback': ['error', { allowNamedFunctions: true }],
+      'react/function-component-definition': [
+        'error',
+        {
+          namedComponents: 'function-declaration',
+          unnamedComponents: 'arrow-function',
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'VariableDeclarator > ArrowFunctionExpression[body.type="BlockStatement"]',
+          message:
+            'Arrow functions with block bodies must be function declarations. Keep components lean and handlers organized.',
+        },
+        {
+          selector: 'ExportDefaultDeclaration[declaration.type="Identifier"]',
+          message:
+            'Use "export default function Name()" in the declaration instead of "export default Name" at bottom.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['*.config.mjs', '*.config.js', '*.config.ts', 'next.config.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+]);
+
+export default eslintConfig;

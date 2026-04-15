@@ -1,0 +1,34 @@
+import { describe, it, expect, vi } from 'vitest';
+import { GreetingService } from '@/services/GreetingService';
+import type { GreetingClient } from '@/clients/GreetingClient';
+import type { Greeting } from '@/models/Greeting';
+
+const mockGreeting: Greeting = {
+  id: 2,
+  message: 'Bonjour, le Monde!',
+  language: 'fr',
+  createdAt: '2026-01-01T00:00:00Z',
+};
+
+describe('GreetingService', () => {
+  it('delegates to client.getRandomGreeting and returns the result', async () => {
+    const mockClient = {
+      getRandomGreeting: vi.fn().mockResolvedValue(mockGreeting),
+    } as unknown as GreetingClient;
+
+    const service = new GreetingService(mockClient);
+    const result = await service.fetchRandom();
+
+    expect(result).toEqual(mockGreeting);
+    expect(mockClient.getRandomGreeting).toHaveBeenCalledOnce();
+  });
+
+  it('propagates errors from the client', async () => {
+    const mockClient = {
+      getRandomGreeting: vi.fn().mockRejectedValue(new Error('client error')),
+    } as unknown as GreetingClient;
+
+    const service = new GreetingService(mockClient);
+    await expect(service.fetchRandom()).rejects.toThrow('client error');
+  });
+});

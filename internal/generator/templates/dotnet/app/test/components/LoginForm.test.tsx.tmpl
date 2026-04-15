@@ -1,0 +1,54 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import LoginForm from '@/components/LoginForm';
+
+const defaultProps = {
+  email: '',
+  password: '',
+  loading: false,
+  error: null,
+  projectName: 'test-project',
+  onEmailChange: vi.fn(),
+  onPasswordChange: vi.fn(),
+  onLogin: vi.fn(),
+};
+
+describe('LoginForm', () => {
+  it('renders the project name as the heading', () => {
+    render(<LoginForm {...defaultProps} />);
+    expect(screen.getByText('test-project')).toBeInTheDocument();
+  });
+
+  it('renders email and password fields', () => {
+    render(<LoginForm {...defaultProps} />);
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  });
+
+  it('calls onEmailChange when email input changes', async () => {
+    const onEmailChange = vi.fn();
+    render(<LoginForm {...defaultProps} onEmailChange={onEmailChange} />);
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    expect(onEmailChange).toHaveBeenCalled();
+  });
+
+  it('calls onLogin when Sign in button is clicked', async () => {
+    const onLogin = vi.fn();
+    render(
+      <LoginForm {...defaultProps} email="a@b.com" password="secret" onLogin={onLogin} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(onLogin).toHaveBeenCalledOnce();
+  });
+
+  it('disables sign in button when email or password is empty', () => {
+    render(<LoginForm {...defaultProps} email="" password="" />);
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeDisabled();
+  });
+
+  it('shows error message when error prop is set', () => {
+    render(<LoginForm {...defaultProps} error="Could not reach the API." />);
+    expect(screen.getByText('Could not reach the API.')).toBeInTheDocument();
+  });
+});

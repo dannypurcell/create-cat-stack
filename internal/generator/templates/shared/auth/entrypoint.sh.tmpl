@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-# DOMAIN — base domain (e.g. example.com). Defaults to localhost for local dev.
 DOMAIN="${DOMAIN:-localhost}"
 
 if [ "$DOMAIN" = "localhost" ]; then
@@ -15,9 +14,6 @@ fi
 {{- if eq .Auth "pocket-id"}}
 
 # --- Start pocket-id in background ---
-# ENCRYPTION_KEY must be stable across restarts (changing it logs everyone out).
-# Generate once and store on the persistent data volume.
-
 mkdir -p /srv/data
 rm -f /srv/data/*.lock /srv/data/pocket-id.lock 2>/dev/null || true
 sqlite3 /srv/data/pocket-id.db "DELETE FROM kv WHERE key='application_lock';" 2>/dev/null || true
@@ -47,7 +43,6 @@ done
 echo "pocket-id ready."
 
 # --- Seed OIDC client (idempotent) ---
-
 DB=/srv/data/pocket-id.db
 CLIENT_ID={{.ProjectName}}-app
 
@@ -78,7 +73,42 @@ sqlite3 "$DB" "INSERT INTO oidc_clients (
 echo "OIDC client '${CLIENT_ID}' seeded."
 
 trap "kill $POCKET_ID_PID 2>/dev/null; exit" INT TERM
+
+{{- else if eq .Auth "jumpcloud"}}
+
+# Read Docker secrets
+SECRETS_BASE="/run/secrets/{{.ProjectName}}"
+
+if [ "$DOMAIN" = "localhost" ]; then
+    export COOKIE_INSECURE="on"
+else
+    export COOKIE_INSECURE="off"
+fi
+
+if [ -f "${SECRETS_BASE}_oidc_client_secret" ]; then
+    OIDC_CLIENT_SECRET=$(cat "${SECRETS_BASE}_oidc_client_secret")
+    export OIDC_CLIENT_SECRET
+fi
+
+if [ -f "${SECRETS_BASE}_jwt_shared_key" ]; then
+    JWT_SHARED_KEY=$(cat "${SECRETS_BASE}_jwt_shared_key")
+    export JWT_SHARED_KEY
+fi
+
+# Fall back to dev passthrough if OIDC credentials aren't configured yet.
+if [ -z "$OIDC_CLIENT_ID" ] || [ "$OIDC_CLIENT_ID" = "change-me" ] || \
+   [ -z "$OIDC_CLIENT_SECRET" ] || [ "$OIDC_CLIENT_SECRET" = "change-me" ]; then
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────┐"
+    echo "│  AUTH: dev passthrough mode (no OIDC credentials)       │"
+    echo "│                                                          │"
+    echo "│  Set OIDC_CLIENT_ID in .env and drop your client secret │"
+    echo "│  in secrets/oidc_client_secret, then restart auth.      │"
+    echo "└─────────────────────────────────────────────────────────┘"
+    echo ""
+    exec caddy run --config /etc/caddy/Caddyfile.dev
+fi
+
 {{- end}}
 
-# --- Start Caddy (foreground) ---
 exec caddy run --config /etc/caddy/Caddyfile

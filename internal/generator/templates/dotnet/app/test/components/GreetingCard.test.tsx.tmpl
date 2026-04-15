@@ -1,0 +1,56 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import GreetingCard from '@/components/GreetingCard';
+import type { Greeting } from '@/models/Greeting';
+
+const mockGreeting: Greeting = {
+  id: 7,
+  message: 'Hola, Mundo!',
+  language: 'es',
+  createdAt: '2026-01-01T00:00:00Z',
+};
+
+const defaultProps = {
+  email: 'test@example.com',
+  greeting: mockGreeting,
+  loading: false,
+  onNewGreeting: vi.fn(),
+  onSignOut: vi.fn(),
+};
+
+describe('GreetingCard', () => {
+  it('displays the greeting message', () => {
+    render(<GreetingCard {...defaultProps} />);
+    expect(screen.getByText('Hola, Mundo!')).toBeInTheDocument();
+  });
+
+  it('displays the user email', () => {
+    render(<GreetingCard {...defaultProps} />);
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+  });
+
+  it('displays language and id', () => {
+    render(<GreetingCard {...defaultProps} />);
+    expect(screen.getByText(/ES · #7/i)).toBeInTheDocument();
+  });
+
+  it('calls onNewGreeting when New greeting button is clicked', async () => {
+    const onNewGreeting = vi.fn();
+    render(<GreetingCard {...defaultProps} onNewGreeting={onNewGreeting} />);
+    await userEvent.click(screen.getByRole('button', { name: /new greeting/i }));
+    expect(onNewGreeting).toHaveBeenCalledOnce();
+  });
+
+  it('calls onSignOut when Sign out button is clicked', async () => {
+    const onSignOut = vi.fn();
+    render(<GreetingCard {...defaultProps} onSignOut={onSignOut} />);
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(onSignOut).toHaveBeenCalledOnce();
+  });
+
+  it('disables New greeting button while loading', () => {
+    render(<GreetingCard {...defaultProps} loading={true} />);
+    expect(screen.getByRole('button', { name: /new greeting/i })).toBeDisabled();
+  });
+});

@@ -1,0 +1,70 @@
+'use client';
+
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  Divider,
+  Typography,
+} from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LogoutIcon from '@mui/icons-material/Logout';
+import type { Greeting } from '@/models/Greeting';
+
+interface GreetingCardProps {
+  email: string;
+  greeting: Greeting;
+  loading: boolean;
+  onNewGreeting: () => void;
+  onSignOut: () => void;
+}
+
+export default function GreetingCard({
+  email,
+  greeting,
+  loading,
+  onNewGreeting,
+  onSignOut,
+}: GreetingCardProps) {
+  return (
+    <Container maxWidth="sm" sx={{"{{"}} mt: 12 {{"}}"}}>
+      <Card elevation={4}>
+        <CardContent sx={{"{{"}} p: 5, textAlign: 'center' {{"}}"}}>
+          <Typography variant="overline" color="text.secondary">
+            Welcome back
+          </Typography>
+          <Typography variant="h6" gutterBottom>
+            {email}
+          </Typography>
+
+          <Divider sx={{"{{"}} my: 3 {{"}}"}} />
+
+          <AutoAwesomeIcon color="primary" sx={{"{{"}} fontSize: 36, mb: 2 {{"}}"}} />
+          <Typography variant="h3" sx={{"{{"}} fontWeight: 300, mb: 1 {{"}}"}}>
+            {greeting.message}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {greeting.language.toUpperCase()} · #{greeting.id}
+          </Typography>
+
+          <Box sx={{"{{"}} mt: 4, display: 'flex', gap: 2, justifyContent: 'center' {{"}}"}}>
+            <Button
+              variant="contained"
+              onClick={onNewGreeting}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
+            >
+              New greeting
+            </Button>
+            <Button variant="outlined" startIcon={<LogoutIcon />} onClick={onSignOut}>
+              Sign out
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
+  );
+}

@@ -1,0 +1,14 @@
+import type { GreetingClient } from '@/clients/GreetingClient';
+import type { Greeting } from '@/models/Greeting';
+
+/**
+ * Business logic layer for greetings.
+ * Orchestrates via GreetingClient; injected via constructor for testability.
+ */
+export class GreetingService {
+  constructor(private readonly client: GreetingClient) {}
+
+  async fetchRandom(): Promise<Greeting> {
+    return this.client.getRandomGreeting();
+  }
+}

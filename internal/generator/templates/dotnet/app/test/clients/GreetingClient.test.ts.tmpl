@@ -1,0 +1,52 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GreetingClient } from '@/clients/GreetingClient';
+import type { Greeting } from '@/models/Greeting';
+
+const mockGreeting: Greeting = {
+  id: 1,
+  message: 'Hello, World!',
+  language: 'en',
+  createdAt: '2026-01-01T00:00:00Z',
+};
+
+describe('GreetingClient', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns a greeting on success', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockGreeting),
+      }),
+    );
+
+    const client = new GreetingClient('/api');
+    const result = await client.getRandomGreeting();
+
+    expect(result).toEqual(mockGreeting);
+    expect(fetch).toHaveBeenCalledWith('/api/greetings/random');
+  });
+
+  it('throws a descriptive error on non-ok response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }),
+    );
+
+    const client = new GreetingClient('/api');
+    await expect(client.getRandomGreeting()).rejects.toThrow('503');
+  });
+
+  it('propagates network errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
+
+    const client = new GreetingClient('/api');
+    await expect(client.getRandomGreeting()).rejects.toThrow('Network failure');
+  });
+});

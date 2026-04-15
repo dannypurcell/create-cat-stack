@@ -1,0 +1,17 @@
+import type { Greeting } from '@/models/Greeting';
+
+/**
+ * HTTP client for the greetings API resource.
+ * All methods throw on non-2xx responses with a descriptive message.
+ */
+export class GreetingClient {
+  constructor(private readonly baseUrl: string) {}
+
+  async getRandomGreeting(): Promise<Greeting> {
+    const res = await fetch(`${this.baseUrl}/greetings/random`);
+    if (!res.ok) {
+      throw new Error(`GreetingClient: GET /greetings/random failed (${res.status})`);
+    }
+    return res.json() as Promise<Greeting>;
+  }
+}

@@ -1,0 +1,86 @@
+'use client';
+
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  TextField,
+  Typography,
+} from '@mui/material';
+
+interface LoginFormProps {
+  email: string;
+  password: string;
+  loading: boolean;
+  error: string | null;
+  projectName: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onLogin: () => void;
+}
+
+export default function LoginForm({
+  email,
+  password,
+  loading,
+  error,
+  projectName,
+  onEmailChange,
+  onPasswordChange,
+  onLogin,
+}: LoginFormProps) {
+  return (
+    <Container maxWidth="xs" sx={{"{{"}} mt: 12 {{"}}"}}>
+      <Card elevation={4}>
+        <CardContent sx={{"{{"}} p: 4 {{"}}"}}>
+          <Typography variant="h5" sx={{"{{"}} fontWeight: 600, textAlign: 'center' {{"}}"}} gutterBottom>
+            {projectName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{"{{"}} textAlign: 'center', mb: 3 {{"}}"}}>
+            Sign in to continue
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            margin="normal"
+            value={email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            autoComplete="email"
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            margin="normal"
+            value={password}
+            onChange={(e) => onPasswordChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onLogin()}
+            autoComplete="current-password"
+          />
+
+          {error && (
+            <Typography color="error" variant="body2" sx={{"{{"}} mt: 1 {{"}}"}}>
+              {error}
+            </Typography>
+          )}
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            sx={{"{{"}} mt: 3 {{"}}"}}
+            onClick={onLogin}
+            disabled={loading || !email || !password}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
+          </Button>
+        </CardContent>
+      </Card>
+    </Container>
+  );
+}

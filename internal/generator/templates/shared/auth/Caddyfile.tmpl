@@ -27,6 +27,58 @@
 	}
 	{{- end}}
 }
+{{- else if eq .Auth "jumpcloud" -}}
+# Caddyfile for {{.ProjectName}}
+# Auth provider: JumpCloud (OIDC via caddy-security)
+
+{
+	security {
+		oauth identity provider jumpcloud {
+			realm jumpcloud
+			driver generic
+			client_id {$OIDC_CLIENT_ID}
+			client_secret {$OIDC_CLIENT_SECRET}
+			scopes openid email profile
+			metadata_url https://oauth.id.jumpcloud.com/.well-known/openid-configuration
+		}
+
+		authentication portal myportal {
+			crypto default token lifetime 3600
+			crypto key sign-verify {$JWT_SHARED_KEY}
+			enable identity provider jumpcloud
+			cookie insecure {$COOKIE_INSECURE:off}
+		}
+
+		authorization policy mypolicy {
+			set auth url /auth/
+			allow roles authp/user authp/admin
+			crypto key verify {$JWT_SHARED_KEY}
+		}
+	}
+}
+
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
+
+	route /auth* {
+		authenticate with myportal
+	}
+
+	route /api/* {
+		authorize with mypolicy
+		uri strip_prefix /api
+		reverse_proxy {{.ProjectName}}-api:8080
+	}
+
+	route {
+		authorize with mypolicy
+		{{- if ne .Frontend "none" }}
+		reverse_proxy {{.ProjectName}}-app:3000
+		{{- else }}
+		respond "{{.ProjectName}} API is running. No frontend configured." 200
+		{{- end}}
+	}
+}
 {{- else -}}
 # Caddyfile for {{.ProjectName}}
 # Auth provider: {{.Auth}} (external)

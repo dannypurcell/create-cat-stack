@@ -1,0 +1,21 @@
+# Dev passthrough — no OIDC configured yet.
+# Swap in the real Caddyfile once OIDC_CLIENT_ID and oidc_client_secret are set.
+
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
+
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy {{.ProjectName}}-api:8080
+	}
+
+	{{- if ne .Frontend "none" }}
+	handle {
+		reverse_proxy {{.ProjectName}}-app:3000
+	}
+	{{- else }}
+	handle {
+		respond "{{.ProjectName}} — dev mode, no auth configured." 200
+	}
+	{{- end}}
+}
